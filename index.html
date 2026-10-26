@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1013">
+<title>타바타 타이머</title>
+<meta name="description" content="20초 운동, 10초 휴식 x 8라운드. 4분 고강도 인터벌 트레이닝 타이머와 운동 기록·목표 관리 앱">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-phase="idle">
+<div class="app">
+  <header class="top">
+    <h1>TABATA</h1>
+    <p class="sub">당신만의 루틴</p>
+  </header>
+
+  <main>
+    <!-- 운동 탭 -->
+    <section id="view-workout" class="view active" aria-label="운동">
+
+      <!-- 1) 설정 화면 -->
+      <div id="panel-setup" class="panel">
+        <div class="card">
+          <h2>인터벌 설정</h2>
+          <div class="steppers">
+            <div class="stepper" data-key="work">
+              <span class="st-label">운동</span>
+              <button type="button" class="st-btn" data-dir="-1" aria-label="운동 시간 감소">−</button>
+              <span class="st-val"><b id="val-work">20</b>초</span>
+              <button type="button" class="st-btn" data-dir="1" aria-label="운동 시간 증가">+</button>
+            </div>
+            <div class="stepper" data-key="rest">
+              <span class="st-label">휴식</span>
+              <button type="button" class="st-btn" data-dir="-1" aria-label="휴식 시간 감소">−</button>
+              <span class="st-val"><b id="val-rest">10</b>초</span>
+              <button type="button" class="st-btn" data-dir="1" aria-label="휴식 시간 증가">+</button>
+            </div>
+            <div class="stepper" data-key="rounds">
+              <span class="st-label">라운드</span>
+              <button type="button" class="st-btn" data-dir="-1" aria-label="라운드 감소">−</button>
+              <span class="st-val"><b id="val-rounds">8</b>회</span>
+              <button type="button" class="st-btn" data-dir="1" aria-label="라운드 증가">+</button>
+            </div>
+            <div class="stepper" data-key="warmup">
+              <span class="st-label">준비</span>
+              <button type="button" class="st-btn" data-dir="-1" aria-label="준비 시간 감소">−</button>
+              <span class="st-val"><b id="val-warmup">10</b>초</span>
+              <button type="button" class="st-btn" data-dir="1" aria-label="준비 시간 증가">+</button>
+            </div>
+          </div>
+          <p class="total">총 운동 시간 <b id="total-time">4:00</b> <button type="button" id="btn-reset-default" class="link">기본값(20/10×8)</button></p>
+        </div>
+
+        <div class="card">
+          <h2>운동 구성</h2>
+          <div class="seg" id="preset-seg" role="tablist" aria-label="운동 세트">
+            <button type="button" data-preset="full" class="on">전신</button>
+            <button type="button" data-preset="lower">하체</button>
+            <button type="button" data-preset="upper">상체·코어</button>
+            <button type="button" data-preset="custom">직접 입력</button>
+          </div>
+          <div id="custom-wrap" hidden>
+            <label for="custom-text" class="hint">한 줄에 운동 하나씩 입력 (최대 20개). 비워두면 전신 세트가 사용됩니다.</label>
+            <textarea id="custom-text" rows="5" placeholder="예) 점핑잭&#10;스쿼트&#10;푸시업"></textarea>
+          </div>
+          <ol id="ex-preview" class="ex-list"></ol>
+        </div>
+
+        <button type="button" id="btn-start" class="btn primary big">시작</button>
+      </div>
+
+      <!-- 2) 진행 화면 -->
+      <div id="panel-run" class="panel" hidden>
+        <div class="run-top">
+          <span id="run-round" class="pill">라운드 1 / 8</span>
+          <span id="run-remaining" class="pill ghost">남은 시간 4:00</span>
+        </div>
+        <div class="ring-wrap">
+          <svg class="ring" viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="ring-bg" cx="100" cy="100" r="90"/>
+            <circle id="ring-fg" class="ring-fg" cx="100" cy="100" r="90" transform="rotate(-90 100 100)"/>
+          </svg>
+          <div class="ring-center">
+            <div id="phase-label" class="phase-label" aria-live="polite">준비</div>
+            <div id="time" class="time" role="timer">0:10</div>
+          </div>
+        </div>
+        <div id="exercise" class="exercise">점핑잭</div>
+        <div id="next-up" class="next-up"></div>
+        <div id="dots" class="dots" aria-hidden="true"></div>
+        <div class="bar"><i id="overall-bar"></i></div>
+        <div class="controls">
+          <button type="button" id="btn-pause" class="btn primary">일시정지</button>
+          <button type="button" id="btn-stop" class="btn ghost">종료</button>
+        </div>
+      </div>
+
+      <!-- 3) 완료 화면 -->
+      <div id="panel-done" class="panel" hidden>
+        <div class="card done-card">
+          <div class="done-emoji" aria-hidden="true">🔥</div>
+          <h2 id="done-title">운동 완료!</h2>
+          <p id="done-msg" class="hint"></p>
+          <div class="done-stats">
+            <div><b id="done-rounds">8</b><span>라운드</span></div>
+            <div><b id="done-work">2:40</b><span>운동 시간</span></div>
+            <div><b id="done-week">1</b><span>이번 주 횟수</span></div>
+          </div>
+        </div>
+        <div class="controls">
+          <button type="button" id="btn-again" class="btn primary">다시 하기</button>
+          <button type="button" id="btn-to-records" class="btn ghost">기록 보기</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 기록 탭 -->
+    <section id="view-records" class="view" aria-label="기록">
+      <div class="card">
+        <h2>이번 주 목표</h2>
+        <div class="goal-line"><b id="goal-count">0</b> / <span id="goal-target">3</span>회 <span id="goal-msg" class="hint"></span></div>
+        <div class="bar thick"><i id="goal-bar"></i></div>
+      </div>
+      <div class="stat-grid">
+        <div class="card stat"><b id="stat-sessions">0</b><span>누적 세션</span></div>
+        <div class="card stat"><b id="stat-minutes">0</b><span>누적 운동(분)</span></div>
+        <div class="card stat"><b id="stat-streak">0</b><span>연속 일수</span></div>
+      </div>
+      <div class="card">
+        <h2>최근 7일 운동 시간(분)</h2>
+        <div id="week-chart" class="week-chart" role="img" aria-label="최근 7일 운동 시간 막대 그래프"></div>
+      </div>
+      <div class="card">
+        <h2>운동 기록</h2>
+        <ul id="history" class="history"></ul>
+        <p id="history-empty" class="hint">아직 기록이 없습니다. 첫 타바타를 시작해 보세요.</p>
+      </div>
+    </section>
+
+    <!-- 설정 탭 -->
+    <section id="view-settings" class="view" aria-label="설정">
+      <div class="card">
+        <h2>알림</h2>
+        <label class="switch"><input type="checkbox" id="opt-sound"><span>소리 (전환음·카운트다운)</span></label>
+        <label class="switch"><input type="checkbox" id="opt-vibrate"><span>진동 (지원 기기)</span></label>
+      </div>
+      <div class="card">
+        <h2>주간 목표</h2>
+        <div class="stepper" data-key="goal">
+          <span class="st-label">주</span>
+          <button type="button" class="st-btn" data-dir="-1" aria-label="주간 목표 감소">−</button>
+          <span class="st-val"><b id="val-goal">3</b>회</span>
+          <button type="button" class="st-btn" data-dir="1" aria-label="주간 목표 증가">+</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>타바타란?</h2>
+        <p class="hint">일본 이즈미 타바타 박사 연구팀이 소개한 고강도 인터벌 운동으로, 20초 전력 운동과 10초 휴식을 8회 반복해 총 4분 동안 진행합니다. 운동 강도가 높으므로 충분히 준비운동을 하고, 통증이나 어지러움이 있으면 즉시 중단하세요.</p>
+      </div>
+      <div class="card">
+        <h2>데이터</h2>
+        <p class="hint">기록은 이 기기의 브라우저에만 저장됩니다.</p>
+        <button type="button" id="btn-clear" class="btn ghost danger">모든 기록 삭제</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="메뉴">
+    <button type="button" data-view="workout" class="on">운동</button>
+    <button type="button" data-view="records">기록</button>
+    <button type="button" data-view="settings">설정</button>
+  </nav>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
